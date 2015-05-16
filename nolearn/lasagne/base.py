@@ -15,6 +15,7 @@ from lasagne.objectives import mse
 from lasagne.objectives import Objective
 from lasagne.updates import nesterov_momentum
 from lasagne.utils import unique
+from lasagne.regularization import l2
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold
@@ -71,6 +72,8 @@ class NeuralNet(BaseEstimator):
         loss=None,
         objective=Objective,
         objective_loss_function=None,
+        regularization=l2,
+        regularization_rate=0,
         batch_iterator_train=BatchIterator(batch_size=128),
         batch_iterator_test=BatchIterator(batch_size=128),
         regression=False,
@@ -101,6 +104,8 @@ class NeuralNet(BaseEstimator):
         self.update = update
         self.objective = objective
         self.objective_loss_function = objective_loss_function
+        self.regularization = regularization
+        self.regularization_rate = regularization_rate
         self.batch_iterator_train = batch_iterator_train
         self.batch_iterator_test = batch_iterator_test
         self.regression = regression
@@ -242,7 +247,7 @@ class NeuralNet(BaseEstimator):
             # XXX breaking the Lasagne interface a little:
             obj.layers = layers
 
-        loss_train = obj.get_loss(X_batch, y_batch)
+        loss_train = obj.get_loss(X_batch, y_batch) + self.regularization_rate * self.regularization(output_layer)
         loss_eval = obj.get_loss(X_batch, y_batch, deterministic=True)
         predict_proba = output_layer.get_output(X_batch, deterministic=True)
         if not self.regression:
